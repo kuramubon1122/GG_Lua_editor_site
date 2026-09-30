@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameGuardian Lua Studio IDE Pro | Official Portal</title>
+    <meta name="description" content="A web-based IDE for GameGuardian Lua scripting with Monaco Editor, code generation, and PWA support. Personal use only.">
+    <meta name="theme-color" content="#4f46e5">
+
+    <!-- ファビコン -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%234f46e5'/><stop offset='100%25' stop-color='%2338bdf8'/></linearGradient></defs><rect width='512' height='512' rx='128' fill='%230c0e14'/><rect x='24' y='24' width='464' height='464' rx='104' fill='none' stroke='url(%23g)' stroke-width='16'/><path d='M160 180 L256 120 L352 180 L352 300 L256 360 L160 300 Z' fill='none' stroke='url(%23g)' stroke-width='24' stroke-linejoin='round'/><circle cx='256' cy='240' r='48' fill='%2338bdf8'/><path d='M220 240 L292 240 M256 204 L256 276' stroke='%230c0e14' stroke-width='14' stroke-linecap='round'/><text x='256' y='430' font-family='sans-serif' font-weight='900' font-size='52' fill='%23e2e8f0' text-anchor='middle' letter-spacing='4'>GG LUA</text></svg>">
+
+    <style>
+        :root {
+            --bg-base: #0c0e14;
+            --bg-surface: #131620;
+            --bg-card: #1a1e2c;
+            --bg-card-hover: #222738;
+            --border: #242b3d;
+            --border-glow: rgba(99, 102, 241, 0.4);
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-glow: rgba(79, 70, 229, 0.4);
+            --accent: #38bdf8;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+
+            --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-glow) 0%, rgba(12, 14, 20, 0) 70%);
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ヘッダー */
+        header {
+            background: rgba(19, 22, 32, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+        .brand span { color: var(--accent); }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--accent); }
+
+        /* 言語セレクター UI */
+        .lang-switch-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 3px 8px;
+            border-radius: 6px;
+            transition: border-color 0.2s;
+        }
+        .lang-switch-box:hover {
+            border-color: var(--primary);
+        }
+        .lang-icon { font-size: 13px; user-select: none; }
+        .lang-select {
+            background: transparent;
+            color: var(--text-main);
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            font-family: var(--font-ui);
+        }
+        .lang-select option {
+            background: var(--bg-surface);
+            color: var(--text-main);
+        }
+
+        .btn-launch {
+            background: linear-gradient(135deg, var(--primary), #3b82f6);
+            color: #fff !important;
+            padding: 7px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            box-shadow: 0 0 16px var(--primary-glow);
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+        .btn-launch:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 24px rgba(79, 70, 229, 0.6);
+        }
+
+        /* ヒーローセクション */
+        .hero {
+            padding: 75px 24px 50px;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(79, 70, 229, 0.15);
+            border: 1px solid rgba(79, 70, 229, 0.4);
+            color: var(--accent);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .hero h1 {
+            font-size: 40px;
+            font-weight: 900;
+            line-height: 1.25;
+            margin-bottom: 18px;
+            letter-spacing: -0.5px;
+        }
+        .hero h1 span {
+            background: linear-gradient(135deg, #a5b4fc, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: 15.5px;
+            color: var(--text-muted);
+            max-width: 680px;
+            margin: 0 auto 32px;
+            line-height: 1.7;
+        }
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .btn-hero {
+            padding: 13px 32px;
+            font-size: 15px;
+            border-radius: 8px;
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 13px 26px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-secondary:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--text-dim);
+        }
+
+        /* プレビュー枠 */
+        .preview-box {
+            max-width: 960px;
+            margin: 20px auto 70px;
+            padding: 0 20px;
+        }
+        .preview-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+        .preview-header {
+            background: var(--bg-card);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .circle { width: 11px; height: 11px; border-radius: 50%; }
+        .red { background: #ef4444; } .yellow { background: #f59e0b; } .green { background: #10b981; }
+        .preview-content {
+            padding: 22px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: #a5d6ff;
+            background: #090b10;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        /* 機能グリッド */
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .section-title h2 {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        .section-title p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 20px;
+            max-width: 1050px;
+            margin: 0 auto 80px;
+            padding: 0 24px;
+        }
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+            transition: all 0.25s ease;
+        }
+        .feature-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .feature-icon {
+            font-size: 26px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .feature-card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+        .feature-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* 3ステップ クイックガイド */
+        .steps-container {
+            max-width: 900px;
+            margin: 0 auto 90px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .step-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+        .step-num {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--primary);
+            opacity: 0.8;
+            margin-bottom: 6px;
+        }
+        .step-item h4 {
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+        .step-item p {
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        /* 利用規約 / ライセンスセクション */
+        .terms-section {
+            max-width: 850px;
+            margin: 0 auto 80px;
+            padding: 0 24px;
+        }
+        .terms-box {
+            background: var(--bg-surface);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-left: 5px solid var(--danger);
+            border-radius: 8px;
+            padding: 24px;
+        }
+        .terms-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 800;
+            color: #fca5a5;
+            margin-bottom: 12px;
+        }
+        .terms-box p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .terms-list {
+            list-style: none;
+            margin: 12px 0;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+        .terms-list li {
+            padding: 5px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .terms-list li::before {
+            content: "✕";
+            color: var(--danger);
+            font-weight: bold;
+        }
+        .terms-summary-en {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border);
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        /* フッター */
+        footer {
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            padding: 30px 24px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        footer p { margin-bottom: 6px; }
+
+        @media (max-width: 850px) {
+            .hero h1 { font-size: 30px; }
+            .steps-container { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<!-- ヘッダー -->
+<header>
+    <a href="#" class="brand">
+        <svg width="24" height="24" viewBox="0 0 512 512">
+            <rect width="512" height="512" rx="128" fill="#4f46e5"/>
+            <circle cx="256" cy="256" r="100" fill="#38bdf8"/>
+            <path d="M220 256 L292 256 M256 220 L256 292" stroke="#0c0e14" stroke-width="26" stroke-linecap="round"/>
+        </svg>
+        <span>GG STUDIO</span> PRO
+    </a>
+
+    <div class="nav-right">
+        <div class="nav-links">
+            <a href="#features" data-i18n="nav_features">機能一覧</a>
+            <a href="#quickstart" data-i18n="nav_quickstart">使い方</a>
+            <a href="#terms" data-i18n="nav_terms">利用規約</a>
+        </div>
+
+        <!-- 手動言語セレクター -->
+        <div class="lang-switch-box">
+            <span class="lang-icon">🌐</span>
+            <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)" aria-label="Language Selector">
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+                <option value="zh">简体中文</option>
+            </select>
+        </div>
+
+        <a href="Lua_editor.html" class="btn-launch" data-i18n="btn_launch">🚀 Studioを開く</a>
+    </div>
+</header>
+
+<!-- ヒーローエリア -->
+<section class="hero">
+    <div class="badge-pill" data-i18n="badge_pill">⚡ Next-Gen GameGuardian Development Tool</div>
+    <h1 data-i18n-html="hero_title">GameGuardian特化型<br><span>ブラウザ完結 Lua Studio IDE</span></h1>
+    <p data-i18n="hero_desc">
+        Monaco Editor（VSCode相当）の強力なコード補完、メモリ領域検索、RVAパッチ、構造体一括書き換えジェネレータを完全統合。インストール不要ですぐに使える開発環境。
+    </p>
+    <div class="hero-actions">
+        <a href="Lua_editor.html" class="btn-launch btn-hero" data-i18n="hero_btn_launch">🚀 IDEを起動する (Launch Studio)</a>
+        <a href="#features" class="btn-secondary" data-i18n="hero_btn_features">機能を見る</a>
+    </div>
+</section>
+
+<!-- プレビュー枠 -->
+<div class="preview-box">
+    <div class="preview-card">
+        <div class="preview-header">
+            <div class="circle red"></div>
+            <div class="circle yellow"></div>
+            <div class="circle green"></div>
+            <span style="font-size: 11px; color: var(--text-dim); margin-left: 10px; font-family: var(--font-mono);">main.lua — GG Lua Studio Pro</span>
+        </div>
+        <pre class="preview-content"><code><span style="color:#d2a8ff; font-weight:bold;">local function</span> <span style="color:#79c0ff;">hackMenu</span>()
+    gg.setRanges(gg.REGION_ANONYMOUS | gg.REGION_CODE_APP)
+    gg.searchNumber(<span style="color:#a5d6ff;">"9999"</span>, gg.TYPE_DWORD)
+    <span style="color:#8b949e;">-- Auto-generated patch &amp; memory logic</span>
+    <span style="color:#d2a8ff; font-weight:bold;">local</span> results = gg.getResults(<span style="color:#79c0ff;">100</span>)
+    gg.editAll(<span style="color:#a5d6ff;">"1"</span>, gg.TYPE_DWORD)
+    gg.toast(<span style="color:#a5d6ff;">"Patched successfully!"</span>)
+<span style="color:#d2a8ff; font-weight:bold;">end</span></code></pre>
+    </div>
+</div>
+
+<!-- 主要機能一覧 -->
+<section id="features">
+    <div class="section-title">
+        <h2 data-i18n="features_title">Features &amp; Toolkit</h2>
+        <p data-i18n="features_subtitle">GameGuardianスクリプト作成を劇的に高速化する特化機能</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">💡</div>
+            <h3 data-i18n="f1_title">GG専用 補完 &amp; ホバーAPI解説</h3>
+            <p data-i18n="f1_desc">gg.searchNumber や gg.setValues などの関数引数、型定数のインテリセンス補完と解説ドキュメントを即座に表示します。</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3 data-i18n="f2_title">構文チェック &amp; 欠損end自動補完</h3>
+            <p data-i18n="f2_desc">Luaで最も頻発する「end不足」や「余分なuntil」をリアルタイムで検知。ワンクリックで不足している場所に自動補完します。</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">⚙️</div>
+            <h3 data-i18n="f3_title">RVA &amp; HEXパッチ ジェネレータ</h3>
+            <p data-i18n="f3_desc">ARM64/ARM32の主要アセンブリ（NOP, RET, MOV）の即時生成や、libil2cpp.so のXa領域ベース計算パッチを自動生成します。</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">📋</div>
+            <h3 data-i18n="f4_title">構造体テーブル一括書き換え</h3>
+            <p data-i18n="f4_desc">Base + オフセット、データ型、書き換え値をGUI上で視覚的に編集し、テーブルパッチ用Luaコードをワンタップで出力します。</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🧮</div>
+            <h3 data-i18n="f5_title">Base + Offset / 型相互変換</h3>
+            <p data-i18n="f5_desc">16進数アドレスの加算電卓や、Float/DWORD/UTF-8バイト列（h表記）のリアルタイム相互変換ツールをエディタ右側に常駐。</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">📲</div>
+            <h3 data-i18n="f6_title">PWA対応・オフライン完全動作</h3>
+            <p data-i18n="f6_desc">ブラウザの「アプリをインストール」から端末にネイティブアプリ化可能。ネット環境がないオフライン下でも軽快に動作します。</p>
+        </div>
+    </div>
+</section>
+
+<!-- クイックスタート -->
+<section id="quickstart">
+    <div class="section-title">
+        <h2 data-i18n="qs_title">Quick Start Guide</h2>
+        <p data-i18n="qs_subtitle">3ステップですぐにスクリプト作成を開始できます</p>
+    </div>
+
+    <div class="steps-container">
+        <div class="step-item">
+            <div class="step-num">01</div>
+            <h4 data-i18n="step1_title">Studioを起動</h4>
+            <p data-i18n="step1_desc">「Studioを開く」ボタンからエディタを起動します。アカウント登録やセットアップは一切不要です。</p>
+        </div>
+        <div class="step-item">
+            <div class="step-num">02</div>
+            <h4 data-i18n="step2_title">コード作成・ツール活用</h4>
+            <p data-i18n="step2_desc">右側のツールボックスでパッチやメニューを自動生成しながら、Monacoの強力なエディタでロジックを記述します。</p>
+        </div>
+        <div class="step-item">
+            <div class="step-num">03</div>
+            <h4 data-i18n="step3_title">保存 &amp; GGで実行</h4>
+            <p data-i18n="step3_desc">「💾 保存」から通常保存や配布用コード（Minify等）を選択してダウンロードし、GameGuardianで実行します。</p>
+        </div>
+    </div>
+</section>
+
+<!-- 利用規約・ライセンス警告 -->
+<section id="terms" class="terms-section">
+    <div class="terms-box">
+        <div class="terms-header">
+            <span>⚠️</span>
+            <span data-i18n="terms_header">利用条件・ライセンス規約 (Terms of Use)</span>
+        </div>
+        <p data-i18n="terms_intro">本ソフトウェアは、個人が自己の開発・学習目的で利用する場合に限り無償で使用できます。</p>
+        
+        <ul class="terms-list">
+            <li data-i18n-html="terms_item1"><strong>二次配布・無断転載の禁止:</strong> 本サイトのソースコード、ファイル、改変物の全部または一部を、第三者のサイトやサーバーに再配布・再アップロード・ミラーリングすることを固く禁じます。</li>
+            <li data-i18n-html="terms_item2"><strong>商用利用・販売の禁止:</strong> 本ツールまたはその派生物を有償で販売・再販することはできません。</li>
+            <li data-i18n-html="terms_item3"><strong>派生版の公開禁止:</strong> 個人利用の範囲でのソースコード改変は自由ですが、改変版を公に再配布することはできません。</li>
+        </ul>
+
+        <div class="terms-summary-en" data-i18n-html="terms_summary_en">
+            <strong>Copyright (c) 2026. All rights reserved.</strong><br>
+            Free for personal development use only. Any redistribution, mirroring, re-hosting, commercial use, or sharing of modified source code is strictly prohibited.
+        </div>
+    </div>
+</section>
+
+<!-- フッター -->
+<footer>
+    <p><strong>GameGuardian Lua Studio IDE Pro</strong></p>
+    <p data-i18n="footer_copy">Copyright &copy; 2026. All rights reserved.</p>
+    <p style="margin-top: 8px;" data-i18n="footer_disclaimer">免責事項: 本ツールは独立した開発環境であり、GameGuardian公式とは一切関係ありません。</p>
+</footer>
+
+<!-- 多言語切替スクリプト -->
+<script>
+    const translations = {
+        ja: {
+            nav_features: "機能一覧",
+            nav_quickstart: "使い方",
+            nav_terms: "利用規約",
+            btn_launch: "🚀 Studioを開く",
+            badge_pill: "⚡ 次世代 GameGuardian 開発ツール",
+            hero_title: "GameGuardian特化型<br><span>ブラウザ完結 Lua Studio IDE</span>",
+            hero_desc: "Monaco Editor（VSCode相当）の強力なコード補完、メモリ領域検索、RVAパッチ、構造体一括書き換えジェネレータを完全統合。インストール不要ですぐに使える開発環境。",
+            hero_btn_launch: "🚀 IDEを起動する (Launch Studio)",
+            hero_btn_features: "機能を見る",
+            features_title: "Features & Toolkit",
+            features_subtitle: "GameGuardianスクリプト作成を劇的に高速化する特化機能",
+            f1_title: "GG専用 補完 & ホバーAPI解説",
+            f1_desc: "gg.searchNumber や gg.setValues などの関数引数、型定数のインテリセンス補完と解説ドキュメントを即座に表示します。",
+            f2_title: "構文チェック & 欠損end自動補完",
+            f2_desc: "Luaで最も頻発する「end不足」や「余分なuntil」をリアルタイムで検知。ワンクリックで不足している場所に自動補完します。",
+            f3_title: "RVA & HEXパッチ ジェネレータ",
+            f3_desc: "ARM64/ARM32の主要アセンブリ（NOP, RET, MOV）の即時生成や、libil2cpp.so のXa領域ベース計算パッチを自動生成します。",
+            f4_title: "構造体テーブル一括書き換え",
+            f4_desc: "Base + オフセット、データ型、書き換え値をGUI上で視覚的に編集し、テーブルパッチ用Luaコードをワンタップで出力します。",
+            f5_title: "Base + Offset / 型相互変換",
+            f5_desc: "16進数アドレスの加算電卓や、Float/DWORD/UTF-8バイト列（h表記）のリアルタイム相互変換ツールをエディタ右側に常駐。",
+            f6_title: "PWA対応・オフライン完全動作",
+            f6_desc: "ブラウザの「アプリをインストール」から端末にネイティブアプリ化可能。ネット環境がないオフライン下でも軽快に動作します。",
+            qs_title: "Quick Start Guide",
+            qs_subtitle: "3ステップですぐにスクリプト作成を開始できます",
+            step1_title: "Studioを起動",
+            step1_desc: "「Studioを開く」ボタンからエディタを起動します。アカウント登録やセットアップは一切不要です。",
+            step2_title: "コード作成・ツール活用",
+            step2_desc: "右側のツールボックスでパッチやメニューを自動生成しながら、Monacoの強力なエディタでロジックを記述します。",
+            step3_title: "保存 & GGで実行",
+            step3_desc: "「💾 保存」から通常保存や配布用コード（Minify等）を選択してダウンロードし、GameGuardianで実行します。",
+            terms_header: "利用条件・ライセンス規約 (Terms of Use)",
+            terms_intro: "本ソフトウェアは、個人が自己の開発・学習目的で利用する場合に限り無償で使用できます。",
+            terms_item1: "<strong>二次配布・無断転載の禁止:</strong> 本サイトのソースコード、ファイル、改変物の全部または一部を、第三者のサイトやサーバーに再配布・再アップロード・ミラーリングすることを固く禁じます。",
+            terms_item2: "<strong>商用利用・販売の禁止:</strong> 本ツールまたはその派生物を有償で販売・再販することはできません。",
+            terms_item3: "<strong>派生版の公開禁止:</strong> 個人利用の範囲でのソースコード改変は自由ですが、改変版を公に再配布することはできません。",
+            terms_summary_en: "<strong>Copyright (c) 2026. All rights reserved.</strong><br>Free for personal development use only. Any redistribution, mirroring, re-hosting, commercial use, or sharing of modified source code is strictly prohibited.",
+            footer_copy: "Copyright &copy; 2026. All rights reserved.",
+            footer_disclaimer: "免責事項: 本ツールは独立した開発環境であり、GameGuardian公式とは一切関係ありません。"
+        },
+        en: {
+            nav_features: "Features",
+            nav_quickstart: "Quick Start",
+            nav_terms: "Terms",
+            btn_launch: "🚀 Launch Studio",
+            badge_pill: "⚡ Next-Gen GameGuardian Dev Tool",
+            hero_title: "Specialized for GameGuardian<br><span>Browser-based Lua Studio IDE</span>",
+            hero_desc: "A fully integrated web IDE with Monaco Editor, GG IntelliSense, memory region tools, RVA patching, and visual struct batch patchers. Zero setup required.",
+            hero_btn_launch: "🚀 Launch Studio",
+            hero_btn_features: "Explore Features",
+            features_title: "Features & Toolkit",
+            features_subtitle: "Specialized toolsets designed to accelerate GG script development",
+            f1_title: "GG IntelliSense & Hover Docs",
+            f1_desc: "Instant auto-completion and hover documentation for gg.* APIs, arguments, memory types, and region flags.",
+            f2_title: "Syntax Checker & Auto-End Fix",
+            f2_desc: "Real-time Lua syntax validation. Pinpoints missing 'end' or orphaned 'until' tokens and auto-completes them with a single click.",
+            f3_title: "RVA & HEX Patch Generator",
+            f3_desc: "Generate ARM64/ARM32 opcodes (NOP, RET, MOV) and libil2cpp.so executable (Xa) RVA memory patchers instantly.",
+            f4_title: "Visual Struct Patch Builder",
+            f4_desc: "Easily build batch memory patch tables with offsets, data types, and values through a visual GUI.",
+            f5_title: "Address & Type Converter",
+            f5_desc: "Hex address calculation (Base + Offset) and real-time multi-type converter (Float, DWORD, UTF-8 Hex String).",
+            f6_title: "PWA & Full Offline Support",
+            f6_desc: "Install directly to your device as a native-like PWA. Works completely offline without any internet connection.",
+            qs_title: "Quick Start Guide",
+            qs_subtitle: "Start crafting scripts in 3 simple steps",
+            step1_title: "Launch Studio",
+            step1_desc: "Click 'Launch Studio' to start coding. No account registration or installation required.",
+            step2_title: "Write & Generate",
+            step2_desc: "Code with Monaco Editor while generating menus and binary patches via the right-side toolbox.",
+            step3_title: "Export & Run in GG",
+            step3_desc: "Export as plain Lua, minified code, or encrypted loaders and execute seamlessly in GameGuardian.",
+            terms_header: "Terms of Use & License Notice",
+            terms_intro: "This software is free to use solely for individual development, educational, and research purposes.",
+            terms_item1: "<strong>No Redistribution or Mirroring:</strong> Redistribution, re-uploading, mirroring, or sublicensing this source code or site is strictly prohibited.",
+            terms_item2: "<strong>No Commercial Use:</strong> Selling, reselling, or monetizing this tool or its derivatives is strictly prohibited.",
+            terms_item3: "<strong>No Public Derivatives:</strong> Modifying the code for personal local use is allowed, but distributing modified versions is strictly forbidden.",
+            terms_summary_en: "<strong>Copyright (c) 2026. All rights reserved.</strong><br>Free for personal development use only. Any redistribution, mirroring, re-hosting, commercial use, or sharing of modified source code is strictly prohibited.",
+            footer_copy: "Copyright &copy; 2026. All rights reserved.",
+            footer_disclaimer: "Disclaimer: This tool is an independent development environment and is not affiliated with GameGuardian."
+        },
+        zh: {
+            nav_features: "功能特性",
+            nav_quickstart: "快速上手",
+            nav_terms: "使用条款",
+            btn_launch: "🚀 启动 Studio",
+            badge_pill: "⚡ 新一代 GameGuardian 脚本开发套件",
+            hero_title: "专为 GameGuardian 打造<br><span>纯浏览器端 Lua Studio IDE</span>",
+            hero_desc: "深度集成 Monaco Editor 代码补全、内存范围搜索、RVA机器码补丁及结构体批量修改生成器。零安装，打开即用。",
+            hero_btn_launch: "🚀 启动 Studio (Launch)",
+            hero_btn_features: "浏览功能",
+            features_title: "功能特性与工具箱",
+            features_subtitle: "大幅提升 GameGuardian 脚本开发效率的专业工具",
+            f1_title: "GG 专用智能补全与悬停文档",
+            f1_desc: "实时提示 gg.searchNumber、gg.setValues 等函数参数及常量，提供即时 API 悬停文档支持。",
+            f2_title: "语法检查与缺少 end 自动补全",
+            f2_desc: "实时捕捉 Lua 语法错误，自动精确定位缺少的 end 或冗余 until，支持一键智能修复补全。",
+            f3_title: "RVA 与 HEX 机器码补丁生成",
+            f3_desc: "一键生成 ARM64/ARM32 常用汇编指令（NOP, RET, MOV），自动计算 libil2cpp.so 的 Xa 区域基址补丁。",
+            f4_title: "结构体表格批量写入生成器",
+            f4_desc: "通过可视化界面设定基址偏移、数据类型与目标数值，一键生成结构体批量冻结写入代码。",
+            f5_title: "基址偏移计算与多进制转换",
+            f5_desc: "内置十六进制 Base + Offset 加算器，支持 Float、DWORD 与 UTF-8 Hex 字节串实时双向转换。",
+            f6_title: "PWA 支持与完全离线运行",
+            f6_desc: "支持一键安装至桌面或移动端主屏幕，无需连接网络即可在离线环境下流畅运行。",
+            qs_title: "快速上手指南",
+            qs_subtitle: "仅需 3 步即可轻松开始编写脚本",
+            step1_title: "启动 Studio",
+            step1_desc: "点击“启动 Studio”进入编辑器，无需注册账号，无需下载安装任何本地环境。",
+            step2_title: "编写逻辑与生成补丁",
+            step2_desc: "借助右侧侧边栏自动生成菜单与内存补丁，在强大的 Monaco 编辑器中快速编写核心逻辑。",
+            step3_title: "保存导出并在 GG 中运行",
+            step3_desc: "通过保存面板选择导出为原代码、代码压缩（Minify）或加密加载器，直接导入 GameGuardian 运行。",
+            terms_header: "使用条款与版权声明 (Terms of Use)",
+            terms_intro: "本软件仅限个人用于自我开发、学习与逆向研究目的免费使用。",
+            terms_item1: "<strong>严禁二次分发与无断转载:</strong> 严禁将本站源码、文件或改动版本的全部或部分重新上传、镜像或分发至任何第三方平台。",
+            terms_item2: "<strong>严禁商业利用与倒卖:</strong> 严禁对本工具及其任何衍生作品进行有偿出售、转售或商业化变现。",
+            terms_item3: "<strong>禁止公开发布修改版本:</strong> 允许出于个人本地研究目的修改代码，但严禁将修改后的版本向公众分发。",
+            terms_summary_en: "<strong>Copyright (c) 2026. All rights reserved.</strong><br>Free for personal development use only. Any redistribution, mirroring, re-hosting, commercial use, or sharing of modified source code is strictly prohibited.",
+            footer_copy: "Copyright &copy; 2026. All rights reserved.",
+            footer_disclaimer: "免责声明: 本工具为第三方独立开发环境，与 GameGuardian 官方没有任何关联。"
+        }
+    };
+
+    function applyLanguage(lang) {
+        if (!translations[lang]) lang = 'en';
+        
+        // テキストの置換 (textContent)
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[lang][key]) {
+                el.textContent = translations[lang][key];
+            }
+        });
+
+        // HTMLタグを含むテキストの置換 (innerHTML)
+        document.querySelectorAll('[data-i18n-html]').forEach(el => {
+            const key = el.getAttribute('data-i18n-html');
+            if (translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
+            }
+        });
+
+        // HTMLのlang属性とセレクトボックスの状態を更新
+        document.documentElement.lang = lang;
+        const select = document.getElementById('lang-select');
+        if (select) select.value = lang;
+
+        // 設定を保存
+        localStorage.setItem('gg_studio_lang', lang);
+    }
+
+    function changeLanguage(lang) {
+        applyLanguage(lang);
+    }
+
+    // 初期化：localStorage -> ブラウザ言語検知 -> デフォルト(en)
+    (function initLanguage() {
+        const savedLang = localStorage.getItem('gg_studio_lang');
+        if (savedLang && translations[savedLang]) {
+            applyLanguage(savedLang);
+            return;
+        }
+
+        const browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+        if (browserLang.startsWith('ja')) {
+            applyLanguage('ja');
+        } else if (browserLang.startsWith('zh')) {
+            applyLanguage('zh');
+        } else {
+            applyLanguage('en');
+        }
+    })();
+</script>
+
+</body>
+</html>
