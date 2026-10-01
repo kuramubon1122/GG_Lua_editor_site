@@ -35,3 +35,8 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
+
+
+## HTML Protector
+
+Standalone HTML embeds fflate, parse5 (including entities), Terser and javascript-obfuscator. These upstream libraries retain their original distribution builds. License texts and bundled notices are included in `licenses/HTML_PROTECTOR_LICENSES.txt` and in the tool’s license panel. No source maps are distributed.
