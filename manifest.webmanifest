@@ -1,0 +1,37 @@
+{
+  "id": "./",
+  "name": "GG Lua Studio",
+  "short_name": "GG Lua",
+  "description": "GameGuardian Lua editor for tablets and PCs. Online connection required.",
+  "lang": "ja",
+  "start_url": "./Lua_editor.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06080d",
+  "theme_color": "#06080d",
+  "categories": [
+    "developer",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
